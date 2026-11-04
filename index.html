@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Svitlo — встановлення прошивки</title>
+<meta name="description" content="Встановлення прошивки Svitlo на плату ESP32-C3 SuperMini прямо з браузера, без Arduino IDE.">
+<script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
+<style>
+  :root { --bg:#121212; --card:#1e1e1e; --line:#2a2a2a; --text:#e8e8e8; --muted:#9a9a9a; --accent:#f39c12; --blue:#2980b9; --ok:#2ecc71; --bad:#e74c3c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.55; }
+  .w { max-width:640px; margin:0 auto; padding:24px 16px 48px; }
+  .logo { text-align:center; font-size:30px; font-weight:800; letter-spacing:2px; color:var(--accent); margin:8px 0 2px; }
+  .logo span { color:#fff; }
+  .sub { text-align:center; color:var(--muted); font-size:14px; margin-bottom:22px; }
+  .card { background:var(--card); border-radius:14px; padding:18px; margin-bottom:14px; }
+  h2 { font-size:18px; margin:0 0 12px; }
+  .install { text-align:center; padding:22px 18px; }
+  .install button { background:var(--accent); color:#111; border:0; border-radius:12px; padding:16px 28px; font-size:19px; font-weight:800; cursor:pointer; width:100%; max-width:380px; }
+  .install button:hover { filter:brightness(1.08); }
+  esp-web-install-button:not(:defined) { display:none; }
+  .note { color:var(--muted); font-size:13px; margin-top:10px; }
+  .warn { color:var(--bad); font-weight:600; }
+  ol { margin:0; padding-left:22px; } li { margin:7px 0; }
+  b.k { background:#2a2a2a; border-radius:6px; padding:1px 7px; font-weight:600; white-space:nowrap; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td { padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td:first-child { font-family:ui-monospace,Menlo,Consolas,monospace; color:var(--accent); white-space:nowrap; }
+  a { color:#5aa9e6; }
+  .dl { display:inline-block; margin-top:8px; background:#3a3a3a; color:#fff; text-decoration:none; padding:10px 16px; border-radius:10px; font-weight:600; }
+  .foot { text-align:center; color:#666; font-size:12px; margin-top:24px; }
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="logo">Svitlo<span>VSlavutychi</span></div>
+  <div class="sub">Встановлення прошивки на плату ESP32-C3 SuperMini · версія <b id="ver">2.0</b></div>
+
+  <div class="card install">
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate">⚡ Встановити прошивку</button>
+      <div slot="unsupported" class="warn">Цей браузер не вміє працювати з платами.<br>Відкрийте сторінку на <b>комп'ютері</b> в <b>Chrome</b> або <b>Edge</b>.</div>
+      <div slot="not-allowed" class="warn">Сторінку треба відкривати за адресою https://…</div>
+    </esp-web-install-button>
+    <div id="loading" class="note">Завантаження інсталятора…</div>
+    <div class="note">Потрібен комп'ютер з Chrome або Edge і USB-кабель, який передає дані.</div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Як встановити</h2>
+    <ol>
+      <li>Підключіть плату до комп'ютера USB-кабелем. Кабель має передавати дані — не лише заряджати.</li>
+      <li>Натисніть <b class="k">⚡ Встановити прошивку</b>. У списку пристроїв оберіть <b class="k">USB JTAG/serial debug unit</b> і натисніть <b class="k">Підключитися</b> (Connect).</li>
+      <li>У вікні, що відкриється, натисніть <b class="k">Install Svitlo</b>.</li>
+      <li>Вікно <b class="k">Erase device</b> («стерти плату?»), галочка <b class="k">Erase device</b>:<br>
+        • <b>нова плата</b> — поставте галочку;<br>
+        • <b>оновлення</b> вже налаштованої плати — <b>не ставте</b>, тоді Wi-Fi, черга й інші налаштування збережуться.</li>
+      <li>Натисніть <b class="k">Next</b>, потім у вікні <b class="k">Confirm Installation</b> — <b class="k">Install</b>. Зачекайте 1–2 хвилини, доки запис дійде до 100%. Кабель не від'єднуйте.</li>
+      <li>З'явиться <b class="k">Installation complete!</b> — плата перезапуститься сама. Якщо світлодіод не блимає — від'єднайте й знову під'єднайте кабель.</li>
+      <li>Нова плата роздасть Wi-Fi <b class="k">svitlo-setup</b>: підключіться до неї телефоном — сторінка налаштування відкриється сама. Оберіть домашній Wi-Fi, введіть пароль, номер черги та esp1 або esp2.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>🔌 Якщо плата не підключається</h2>
+    <ol>
+      <li>Закрийте Arduino IDE та інші програми, що можуть тримати порт (монітор порту).</li>
+      <li>Спробуйте інший кабель або інший USB-роз'єм комп'ютера.</li>
+      <li>Режим прошивки вручну: <b>затисніть кнопку BOOT</b> на платі, під'єднайте кабель (або коротко натисніть RESET), відпустіть BOOT і натисніть «Встановити» ще раз. Після встановлення від'єднайте й знову під'єднайте кабель.</li>
+      <li>Windows не бачить плату — оновіть Chrome/Edge; для ESP32-C3 SuperMini окремі драйвери зазвичай не потрібні.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>🔤 Що означають написи у вікні встановлення</h2>
+    <table>
+      <tr><td>Install Svitlo</td><td>встановити прошивку</td></tr>
+      <tr><td>Erase device</td><td>стерти плату повністю (разом з налаштуваннями)</td></tr>
+      <tr><td>Back / Next</td><td>назад / далі</td></tr>
+      <tr><td>Confirm Installation → Install</td><td>підтвердити → встановити</td></tr>
+      <tr><td>Installing… Preparing / Erasing</td><td>іде запис / підготовка / стирання — не від'єднуйте кабель</td></tr>
+      <tr><td>Installation complete!</td><td>готово</td></tr>
+      <tr><td>Logs &amp; Console</td><td>журнал плати (що вона пише) — для перевірки</td></tr>
+      <tr><td>Failed to initialize / Installation failed</td><td>не вдалося — див. «Якщо плата не підключається»</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>📡 Оновлення без кабелю (по повітрю)</h2>
+    Плата вже з прошивкою 2.0 оновлюється з власної сторінки: <b class="k">⬆️ Оновити прошивку</b> → оберіть цей файл.<br>
+    <a class="dl" href="firmware/svitlo.bin" download>⬇️ Завантажити svitlo.bin</a>
+  </div>
+
+  <div class="foot">Svitlo · прошивка для ESP32-C3 SuperMini · інсталятор на основі ESP Web Tools</div>
+</div>
+<script>
+  // якщо бібліотека інсталятора не завантажилась (немає інтернету) — кажемо про це
+  const t = setTimeout(() => { document.getElementById('loading').innerHTML = '<span class="warn">Інсталятор не завантажився. Перевірте інтернет і оновіть сторінку.</span>'; }, 8000);
+  customElements.whenDefined('esp-web-install-button').then(() => { clearTimeout(t); document.getElementById('loading').remove(); });
+  fetch('manifest.json').then(r => r.json()).then(m => { document.getElementById('ver').textContent = m.version; }).catch(() => {});
+</script>
+</body>
+</html>
