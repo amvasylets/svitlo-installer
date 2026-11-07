@@ -1,0 +1,15 @@
+build-tools: /usr/local/lib/android/sdk/build-tools/37.0.0
+platform: android-36 (target 36, min 19)
+version: 1.0.10 (110)
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+⚠️ Немає ключа підпису — тимчасовий (оновлення поверх не встановиться)
+Verifies
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): true
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+-rw-r--r-- 1 runner runner 70925 Nov  7 10:11 out/svitlo-ping.apk
