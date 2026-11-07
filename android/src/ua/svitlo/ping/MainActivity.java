@@ -102,6 +102,8 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(16), dp(16), dp(16), dp(24));
+        root.setFocusableInTouchMode(true);              // щоб клавіатура не вискакувала одразу при відкритті
+        root.setDescendantFocusability(LinearLayout.FOCUS_BEFORE_DESCENDANTS);
         sv.addView(root);
 
         TextView logo = text(root, "⚡ Svitlo Пінг", 28, ACCENT, true);
@@ -172,6 +174,7 @@ public class MainActivity extends Activity {
         ver.setGravity(Gravity.CENTER_HORIZONTAL); ver.setPadding(0, dp(12), 0, 0);
 
         setContentView(sv);
+        root.requestFocus();
         fillForm();
         showForm(!Cfg.configured(this));
     }
