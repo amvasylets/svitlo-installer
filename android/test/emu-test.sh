@@ -13,7 +13,7 @@ X=$((W/2)); Y1=$((H*3/4)); Y2=$((H/4))
 dump() { rm -f out/ui.xml; for i in 1 2 3; do adb shell rm -f /data/local/tmp/ui.xml; r=$(adb shell uiautomator dump /data/local/tmp/ui.xml 2>&1); adb pull /data/local/tmp/ui.xml out/ui.xml >/dev/null 2>&1 && [ -s out/ui.xml ] && return 0; echo "   (uiautomator: $(echo $r | tr -d '\r' | head -c 120))"; sleep 2; done; return 1; }
 up() { for i in 1 2 3 4; do adb shell input swipe $X $Y2 $X $Y1 150; done; sleep 1; }          # на самий верх
 down() { adb shell input swipe $X $Y1 $X $Y2 300; sleep 1; }
-seen() { dump; grep -q "$1" out/ui.xml; }
+seen() { for i in 1 2 3 4 5; do dump; grep -q "$1" out/ui.xml && return 0; down; done; return 1; }   # шукаємо, гортаючи вниз
 # натиснути елемент з текстом/підписом $1; якщо його не видно — гортаємо вниз (до 6 разів)
 tap() { for i in 1 2 3 4 5 6 7; do dump; xy=$(python3 ui.py out/ui.xml "$1") && { adb shell input tap $xy; sleep 1; return 0; }; down; done; echo "   (не знайдено на екрані: $1)"; return 1; }
 hidekb() { adb shell dumpsys input_method | grep -q 'mInputShown=true' && adb shell input keyevent 4; sleep 1; }
