@@ -39,7 +39,7 @@ jobs:
     needs: build
     if: needs.build.outputs.ok == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -91,5 +91,3 @@ jobs:
           git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Svitlo Пінг: збірка ${{ github.run_number }}"
           git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" android-build
           cd ..
-          [ -f pub/svitlo-ping.apk ] || exit 0
-          gh release view android-ping -R ${{ github.repository }} >/dev/null 2>&1 || gh release create android-ping -R ${{ github.repository }} --target ${{ github.sha }} --title "Svitlo Пінг для Android" --notes "Застосунок для Android 4.4–17: поки телефон на зарядці — щохвилини пінг боту."
