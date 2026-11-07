@@ -10,7 +10,7 @@ shot() { adb exec-out screencap -p > "out/api${API}_$1.png" 2>/dev/null || adb s
 front() { adb shell am start -n $PKG/.MainActivity >/dev/null 2>&1; sleep 2; }
 WH=$(adb shell wm size 2>/dev/null | grep -o '[0-9]*x[0-9]*' | tail -1); W=${WH%x*}; H=${WH#*x}; [ -z "$W" ] && W=720 && H=1280
 X=$((W/2)); Y1=$((H*3/4)); Y2=$((H/4))
-dump() { rm -f out/ui.xml; for i in 1 2 3; do adb shell rm -f /sdcard/ui.xml; r=$(adb shell uiautomator dump /sdcard/ui.xml 2>&1); adb pull /sdcard/ui.xml out/ui.xml >/dev/null 2>&1 && [ -s out/ui.xml ] && return 0; echo "   (uiautomator: $(echo $r | tr -d '\r' | head -c 120))"; sleep 2; done; return 1; }
+dump() { rm -f out/ui.xml; for i in 1 2 3; do adb shell rm -f /data/local/tmp/ui.xml; r=$(adb shell uiautomator dump /data/local/tmp/ui.xml 2>&1); adb pull /data/local/tmp/ui.xml out/ui.xml >/dev/null 2>&1 && [ -s out/ui.xml ] && return 0; echo "   (uiautomator: $(echo $r | tr -d '\r' | head -c 120))"; sleep 2; done; return 1; }
 up() { for i in 1 2 3 4; do adb shell input swipe $X $Y2 $X $Y1 150; done; sleep 1; }          # на самий верх
 down() { adb shell input swipe $X $Y1 $X $Y2 300; sleep 1; }
 seen() { dump; grep -q "$1" out/ui.xml; }
@@ -24,9 +24,10 @@ python3 server.py 8765 > out/server.log 2>&1 & SRV=$!
 adb logcat -c
 adb install -r "$APK" | tail -1
 check "встановлення APK на Android API $API" "adb shell pm list packages | grep -q $PKG"
-# ТІЛЬКИ тестовий сервер: записуємо його до першого запуску (-f 32 = доставити застосунку, який ще не запускали)
-adb shell am broadcast -f 32 -n $PKG/.TestReceiver -a ua.svitlo.ping.TEST_CONFIG --es server http://10.0.2.2:8765 --ez enabled false
-sleep 1
+# ТІЛЬКИ тестовий сервер: запускаємо застосунок (щоб Android дозволив йому отримувати команди), записуємо тестовий сервер, перезапускаємо екран
+adb shell am start -W -n $PKG/.MainActivity >/dev/null 2>&1; sleep 3
+adb shell am broadcast -n $PKG/.TestReceiver -a ua.svitlo.ping.TEST_CONFIG --es server http://10.0.2.2:8765 --ez enabled false | tr -d '\r' | tail -1 | sed 's/^/   налаштування тесту: /'
+sleep 1; adb shell am start -S -W -n $PKG/.MainActivity >/dev/null 2>&1; sleep 3
 [ "$API" -ge 33 ] && adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS
 plug 1
 front; sleep 3; shot 01_pershyi_zapusk
