@@ -26,6 +26,7 @@ import android.os.SystemClock;
 public class PingService extends Service {
     static final String ACT_START = "ua.svitlo.ping.START";
     static final String ACT_PING_NOW = "ua.svitlo.ping.PING_NOW";
+    static final String ACT_WATCHDOG = "ua.svitlo.ping.WATCHDOG";
     static final String CH = "ping";
     static final int NOTIF = 1;
 
@@ -78,6 +79,11 @@ public class PingService extends Service {
             h.post(new Runnable() { @Override public void run() { checkPower(); } });
         }
         if (ACT_PING_NOW.equals(a)) h.post(new Runnable() { @Override public void run() { pingNow(true); } });
+        if (ACT_WATCHDOG.equals(a)) h.post(new Runnable() { @Override public void run() {
+            // будильник розбудив телефон: якщо черговий пінг «проспали» — надсилаємо зараз
+            checkPower();
+            if (charging != null && charging && SystemClock.elapsedRealtime() > nextPing + 3000) { h.removeCallbacks(tick); h.post(tick); }
+        } });
         return START_STICKY;
     }
 
@@ -85,6 +91,7 @@ public class PingService extends Service {
         try { unregisterReceiver(power); } catch (Exception ignored) { }
         if (h != null) h.removeCallbacksAndMessages(null);
         locks(false);
+        cancelWatchdog();
         if (thread != null) thread.quit();
         Cfg.p(this).edit().putBoolean("running", false).putBoolean("charging", false).apply();
         super.onDestroy();
@@ -127,6 +134,7 @@ public class PingService extends Service {
         } else {
             Cfg.log(this, first ? "🔌 Пінг очікує: телефон не заряджається" : "🔌 Зарядку відключено — пінг призупинено (світла немає?)");
             locks(false);
+            cancelWatchdog();
             Cfg.p(this).edit().putLong("next", 0).apply();
         }
         notifyStatus();
@@ -174,6 +182,7 @@ public class PingService extends Service {
             if (nextPing <= now) nextPing = now + Cfg.PING_EVERY;
             h.postDelayed(this, nextPing - now);
             Cfg.p(PingService.this).edit().putLong("next", System.currentTimeMillis() + (nextPing - now)).apply();
+            watchdog(nextPing + 5000);
             if (!Cfg.extra(PingService.this).isEmpty()) { h.removeCallbacks(extraTick); h.postDelayed(extraTick, Cfg.EXTRA_SHIFT); }
         }
     };
@@ -195,6 +204,28 @@ public class PingService extends Service {
             h.postDelayed(this, 20_000L);
         }
     };
+
+    /**
+     * Android 4.4–5.1: деякі телефони «засинають» навіть на зарядці. Будильник розбудить і нагадає про пінг.
+     * На Android 6+ телефон на зарядці не засинає для служби з постійним сповіщенням — будильник не потрібен.
+     */
+    private void watchdog(long atElapsed) {
+        if (Build.VERSION.SDK_INT >= 23) return;
+        try {
+            android.app.AlarmManager am = (android.app.AlarmManager) getSystemService(ALARM_SERVICE);
+            PendingIntent pi = PendingIntent.getService(this, 7, new Intent(this, PingService.class).setAction(ACT_WATCHDOG), PendingIntent.FLAG_UPDATE_CURRENT);
+            if (Build.VERSION.SDK_INT >= 19) am.setExact(android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP, atElapsed, pi);
+            else am.set(android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP, atElapsed, pi);
+        } catch (Exception ignored) { }
+    }
+
+    private void cancelWatchdog() {
+        if (Build.VERSION.SDK_INT >= 23) return;
+        try {
+            android.app.AlarmManager am = (android.app.AlarmManager) getSystemService(ALARM_SERVICE);
+            am.cancel(PendingIntent.getService(this, 7, new Intent(this, PingService.class).setAction(ACT_WATCHDOG), PendingIntent.FLAG_UPDATE_CURRENT));
+        } catch (Exception ignored) { }
+    }
 
     /** manual — натиснули «Перевірити зараз»: пінгуємо навіть без зарядки, щоб перевірити зв'язок. */
     private void pingNow(boolean manual) {

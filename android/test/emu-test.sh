@@ -6,7 +6,9 @@ ok() { echo "✅ $*" | tee -a out/results.txt; }
 bad() { echo "❌ $*" | tee -a out/results.txt; }
 check() { if eval "$2"; then ok "$1"; else bad "$1"; fi; }
 UI=1
-scheck() { if [ "$UI" = 1 ]; then check "$1" "seen '$2'"; else echo "ℹ️ $1 — перевірено на скріні (на цій версії Android інструмент читання екрана не працює)" | tee -a out/results.txt; fi; }
+scheck() {
+  if [ "$UI" != 1 ]; then echo "ℹ️ $1 — перевірено на скріні (на цій версії Android інструмент читання екрана не працює)" | tee -a out/results.txt; return; fi
+  if seen "$2"; then ok "$1"; elif [ ! -s out/ui.xml ]; then echo "ℹ️ $1 — інструмент читання екрана не відповів, див. скрін" | tee -a out/results.txt; else bad "$1"; fi; }
 hits() { grep -c " /p/$1" hits.log 2>/dev/null || true; }
 shot() { adb exec-out screencap -p > "out/api${API}_$1.png" 2>/dev/null || adb shell screencap -p | sed 's/\r$//' > "out/api${API}_$1.png"; }
 front() { adb shell am start -n $PKG/.MainActivity >/dev/null 2>&1; sleep 2; }
@@ -58,13 +60,15 @@ sleep 3; up; shot 03_pratsiuie
 scheck "екран показує «Працює»" "Працює"
 check "працює як фонова служба з постійним сповіщенням" "adb shell dumpsys activity services $PKG | grep -q 'isForeground=true'"
 
-# екран вимкнено, застосунок у фоні — пінг раз на хвилину
-adb shell input keyevent 3; adb shell input keyevent 26; n0=$(hits 3.2/esp1); t0=$(date +%s)
+# застосунок у фоні (на 5.0+ ще й екран вимкнено) — пінг раз на хвилину
+# (емулятор Android 4.4 при вимкненому екрані «замерзає» повністю, разом з adb, тому там екран не вимикаємо)
+adb shell input keyevent 3; [ "$API" -ge 21 ] && adb shell input keyevent 26; n0=$(hits 3.2/esp1); t0=$(date +%s)
 sleep 185
 n1=$(hits 3.2/esp1)
-check "у фоні з вимкненим екраном: 3 пінги за 3 хв (було $((n1-n0)))" "[ $((n1-n0)) -ge 3 ] && [ $((n1-n0)) -le 4 ]"
+WHERE="у фоні"; [ "$API" -ge 21 ] && WHERE="у фоні з вимкненим екраном"
+check "$WHERE: 3 пінги за 3 хв (було $((n1-n0)))" "[ $((n1-n0)) -ge 3 ] && [ $((n1-n0)) -le 4 ]"
 python3 -c "import sys,time; t=[float(l.split()[0]) for l in open('hits.log') if '/p/3.2/esp1' in l and float(l.split()[0])>$t0]; print('   інтервали між пінгами, с:', [round(b-a,1) for a,b in zip(t,t[1:])])" | tee -a out/results.txt
-adb shell input keyevent 26; sleep 1; adb shell wm dismiss-keyguard 2>/dev/null; adb shell input keyevent 82; sleep 1
+if [ "$API" -ge 21 ]; then adb shell input keyevent 26; sleep 1; adb shell wm dismiss-keyguard 2>/dev/null; adb shell input keyevent 82; sleep 1; fi
 
 # зарядку від'єднали (= зникло світло) — пінги припиняються
 plug 0; sleep 3; n0=$(hits 3.2/esp1); sleep 75; n1=$(hits 3.2/esp1)
