@@ -12,7 +12,7 @@ API="${PLAT_NAME#android-}"
 TARGET=$(( API > 36 ? 36 : API ))          # поведінку перевіряли до Android 16; на 17 працює як застосунок для 16
 MIN=19                                     # Android 4.4
 CODE="${VERSION_CODE:-$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))}"
-NAME="${VERSION_NAME:-1.0.${GITHUB_RUN_NUMBER:-0}}"
+NAME="${VERSION_NAME:-1.1.${GITHUB_RUN_NUMBER:-0}}"
 echo "build-tools: $BT"; echo "platform: $PLAT_NAME (target $TARGET, min $MIN)"; echo "version: $NAME ($CODE)"
 
 rm -rf out && mkdir -p out/gen out/classes out/dex
