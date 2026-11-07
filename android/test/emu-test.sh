@@ -18,7 +18,7 @@ seen() { dump; grep -q "$1" out/ui.xml; }
 tap() { for i in 1 2 3 4 5 6 7; do dump; xy=$(python3 ui.py out/ui.xml "$1") && { adb shell input tap $xy; sleep 1; return 0; }; down; done; echo "   (не знайдено на екрані: $1)"; return 1; }
 hidekb() { adb shell dumpsys input_method | grep -q 'mInputShown=true' && adb shell input keyevent 4; sleep 1; }
 plug() { adb shell dumpsys battery set ac "$1"; adb shell dumpsys battery set usb 0; adb shell dumpsys battery set wireless 0 2>/dev/null; }
-cfg() { adb shell am broadcast -n $PKG/.TestReceiver -a ua.svitlo.ping.TEST_CONFIG "$@" >/dev/null; }
+cfg() { case "$*" in *--es\ server*) ;; *) set -- --es server http://10.0.2.2:8765 "$@";; esac; adb shell am broadcast -n $PKG/.TestReceiver -a ua.svitlo.ping.TEST_CONFIG "$@" >/dev/null; }
 
 python3 server.py 8765 > out/server.log 2>&1 & SRV=$!
 adb logcat -c
@@ -36,6 +36,7 @@ check "перший запуск: поле «Номер черги» видно"
 tap "Номер черги" && adb shell input text "3/2"; hidekb
 tap "Додатково"
 check "у «Додатково» видно адресу сервера (тестового)" "seen '10.0.2.2:8765'"
+if ! grep -q '10.0.2.2:8765' out/ui.xml 2>/dev/null; then bad "ЗУПИНКА: тестовий сервер не підставився — далі не йдемо, щоб не чіпати справжнього бота"; kill $SRV; exit 1; fi
 shot 02_zapovneno
 tap "Зберегти і запустити"; sleep 6
 [ "$API" -ge 23 ] && { adb shell input keyevent 4; sleep 1; adb shell dumpsys deviceidle whitelist +$PKG >/dev/null; }   # вікно «дозволити роботу у фоні» — у тесті дозволяємо через adb
