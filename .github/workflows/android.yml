@@ -85,7 +85,7 @@ jobs:
         run: |
           mkdir -p pub/tests
           cp art/apk/* pub/ 2>/dev/null || true
-          for d in art/test-api*; do [ -d "$d" ] || continue; n=$(basename $d); mkdir -p pub/tests/$n; cp $d/*.png $d/results.txt $d/hits.log pub/tests/$n/ 2>/dev/null || true; grep -B2 -A25 'FATAL EXCEPTION' $d/logcat.txt > pub/tests/$n/crash.txt 2>/dev/null || true; grep -i -E 'svitlo|PingService|ForegroundService' $d/logcat.txt | tail -300 > pub/tests/$n/logcat-app.txt 2>/dev/null || true; done
+          for d in art/test-api*; do [ -d "$d" ] || continue; n=$(basename $d); mkdir -p pub/tests/$n; cp $d/*.png $d/results.txt $d/hits.log pub/tests/$n/ 2>/dev/null || true; grep -B2 -A25 'FATAL EXCEPTION' $d/logcat.txt > pub/tests/$n/crash.txt 2>/dev/null || true; grep -i -E 'svitlo|PingService|ForegroundService' $d/logcat-all.txt | tail -400 > pub/tests/$n/logcat-app.txt 2>/dev/null || true; done
           { echo "Збірка: ${{ github.sha }} · run ${{ github.run_number }}"; echo "Тести: ${{ needs.test.result }}"; for f in pub/tests/*/results.txt; do echo; echo "== $(basename $(dirname $f))"; cat $f; done; } > pub/SUMMARY.txt
           cd pub && git init -q && git checkout -q -b android-build && git add -A
           git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Svitlo Пінг: збірка ${{ github.run_number }}"

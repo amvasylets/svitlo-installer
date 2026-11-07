@@ -17,7 +17,7 @@ up() { for i in 1 2 3 4; do adb shell input swipe $X $Y2 $X $Y1 150; done; sleep
 down() { adb shell input swipe $X $Y1 $X $Y2 300; sleep 1; }
 seen() { for i in 1 2 3 4 5; do dump; grep -q "$1" out/ui.xml && return 0; down; done; return 1; }   # шукаємо, гортаючи вниз
 # натиснути елемент з текстом/підписом $1; якщо його не видно — гортаємо вниз (до 6 разів)
-tap() { for i in 1 2 3 4 5 6 7; do dump; xy=$(python3 ui.py out/ui.xml "$1") && { adb shell input tap $xy; sleep 1; return 0; }; down; done; echo "   (не знайдено на екрані: $1)"; return 1; }
+tap() { for i in 1 2 3 4 5 6 7; do dump; xy=$(python3 ui.py out/ui.xml "$1") && { adb shell input tap $xy; sleep 1; return 0; }; down; done; dump; xy=$(python3 ui.py out/ui.xml "$1" any) && { adb shell input tap $xy; sleep 1; return 0; }; echo "   (не знайдено на екрані: $1)"; return 1; }
 hidekb() { adb shell dumpsys input_method | grep -q 'mInputShown=true' && adb shell input keyevent 4; sleep 1; }
 plug() { adb shell dumpsys battery set ac "$1"; adb shell dumpsys battery set usb 0; adb shell dumpsys battery set wireless 0 2>/dev/null; }
 cfg() { case "$*" in *--es\ server*) ;; *) set -- --es server http://10.0.2.2:8765 "$@";; esac; adb shell am broadcast -n $PKG/.TestReceiver -a ua.svitlo.ping.TEST_CONFIG "$@" >/dev/null; }
@@ -48,7 +48,7 @@ else
   cfg --es queue 3/2 --es board esp1 --ez enabled true; sleep 6
 fi
 if [ "$API" -ge 23 ]; then   # вікно «дозволити роботу у фоні»: закриваємо (лише якщо воно справді відкрите) і дозволяємо через adb
-  adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' | grep -q "$PKG/.MainActivity" || adb shell input keyevent 4; sleep 1
+  adb shell dumpsys window | grep -E 'mCurrentFocus' | grep -qE "$PKG/($PKG)?\.MainActivity" || adb shell input keyevent 4; sleep 1
   adb shell dumpsys deviceidle whitelist +$PKG >/dev/null
 fi
 front
