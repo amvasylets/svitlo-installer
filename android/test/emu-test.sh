@@ -85,6 +85,8 @@ cfg --es queue 9.9 --ez enabled true --ez ping_now true; sleep 6; front; up; sho
 scheck "черги немає на сервері → пише «черга не знайдена»" "не знайдена"
 cfg --es queue 3.2 --es board esp2 --ez enabled true --ez ping_now true; sleep 6
 check "esp2 → адреса …/p/3.2/esp2" "[ \$(hits 3.2/esp2) -ge 1 ]"
+cfg --es queue 3.2 --es board esp5 --ez enabled true --ez ping_now true; sleep 6
+check "esp5 → адреса …/p/3.2/esp5 (на черзі до 6 пристроїв)" "[ \$(hits 3.2/esp5) -ge 1 ]"
 # немає сервера/інтернету
 cfg --es server http://10.0.2.2:9 --ez ping_now true; sleep 8; front; up; shot 06_nemaie_zviazku
 scheck "сервер недоступний → «Немає зв'язку з сервером»" "Немає зв"

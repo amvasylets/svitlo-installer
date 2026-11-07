@@ -19,7 +19,8 @@ final class Cfg {
 
     static String server(Context c) { String s = p(c).getString("server", ""); return s.isEmpty() ? DEFAULT_SERVER : s; }
     static String queue(Context c) { return p(c).getString("queue", ""); }
-    static String board(Context c) { return p(c).getString("board", "esp1"); }
+    static String board(Context c) { String b = p(c).getString("board", "esp1"); return validBoard(b) ? b : "esp1"; }
+    static boolean validBoard(String b) { return b != null && b.matches("esp[1-6]"); }
     static String extra(Context c) { return p(c).getString("extra", ""); }
     static boolean enabled(Context c) { return p(c).getBoolean("enabled", false); }
     static boolean configured(Context c) { return !queue(c).isEmpty(); }

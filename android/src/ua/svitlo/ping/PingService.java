@@ -21,7 +21,7 @@ import android.os.SystemClock;
 
 /**
  * Фонова служба: поки телефон заряджається — раз на хвилину надсилає пінг на сервер
- * ({сервер}/p/{черга}/{esp1|esp2}), як плата ESP32. Немає зарядки (= немає світла) — мовчить.
+ * ({сервер}/p/{черга}/{esp1…esp6}), як плата ESP32. Немає зарядки (= немає світла) — мовчить.
  */
 public class PingService extends Service {
     static final String ACT_START = "ua.svitlo.ping.START";

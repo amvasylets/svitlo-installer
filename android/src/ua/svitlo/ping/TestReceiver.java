@@ -11,7 +11,7 @@ public class TestReceiver extends BroadcastReceiver {
         SharedPreferences.Editor e = Cfg.p(c).edit();
         if (i.hasExtra("server")) e.putString("server", Cfg.normServer(i.getStringExtra("server")));
         if (i.hasExtra("queue")) e.putString("queue", Cfg.normQueue(i.getStringExtra("queue")));
-        if (i.hasExtra("board")) e.putString("board", "esp2".equals(i.getStringExtra("board")) ? "esp2" : "esp1");
+        if (i.hasExtra("board")) e.putString("board", Cfg.validBoard(i.getStringExtra("board")) ? i.getStringExtra("board") : "esp1");
         if (i.hasExtra("extra")) e.putString("extra", i.getStringExtra("extra"));
         if (i.hasExtra("enabled")) e.putBoolean("enabled", i.getBooleanExtra("enabled", false));
         e.commit();

@@ -22,8 +22,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,7 +34,8 @@ public class MainActivity extends Activity {
     private final Handler ui = new Handler();
     private TextView tvState, tvPower, tvLast, tvNext, tvWhere, tvErr, tvBat, tvNotif, tvHist, tvExtra;
     private EditText etQueue, etServer, etExtra;
-    private RadioButton rb1, rb2;
+    private final Button[] boards = new Button[6];     // esp1 … esp6
+    private String boardSel = "esp1";
     private LinearLayout form, adv, histBox, batBox, notifBox;
     private Button btnEdit, btnToggle, btnBat, btnNotif, btnAdv, btnHist, btnPing;
 
@@ -129,11 +128,20 @@ public class MainActivity extends Activity {
         form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL); set.addView(form);
         etQueue = input(form, "Номер черги", "наприклад 3.2", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         text(form, "Ким цей телефон буде для бота", 14, MUTED, false).setPadding(0, dp(10), 0, 0);
-        RadioGroup rg = new RadioGroup(this); rg.setOrientation(RadioGroup.HORIZONTAL);
-        rb1 = new RadioButton(this); rb1.setText("esp1   "); rb1.setTextColor(TEXT); rb1.setTextSize(17); rb1.setId(View.generateViewId());
-        rb2 = new RadioButton(this); rb2.setText("esp2"); rb2.setTextColor(TEXT); rb2.setTextSize(17); rb2.setId(View.generateViewId());
-        rg.addView(rb1); rg.addView(rb2); form.addView(rg);
-        text(form, "Якщо на цій черзі вже є плата esp1 — оберіть esp2 (і навпаки).", 13, MUTED, false);
+        for (int row = 0; row < 2; row++) {               // 6 кнопок: esp1 … esp6, по 3 в ряд — як у платі
+            LinearLayout r = new LinearLayout(this); r.setOrientation(LinearLayout.HORIZONTAL);
+            for (int col = 0; col < 3; col++) {
+                final int n = row * 3 + col + 1;
+                Button bt = new Button(this);
+                bt.setText("esp" + n); bt.setTextSize(16); bt.setAllCaps(false); bt.setTypeface(Typeface.DEFAULT_BOLD);
+                bt.setContentDescription("Пристрій esp" + n);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(48), 1f); lp.setMargins(col == 0 ? 0 : dp(4), dp(6), col == 2 ? 0 : dp(4), 0);
+                bt.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { selectBoard("esp" + n); } });
+                boards[n - 1] = bt; r.addView(bt, lp);
+            }
+            form.addView(r);
+        }
+        text(form, "Якщо на цій черзі вже є плата чи телефон esp1 — оберіть інший номер (esp2…esp6). На одній черзі може бути до 6 пристроїв.", 13, MUTED, false);
         btnAdv = button(form, "▸ Додатково", LINE, MUTED);
         adv = new LinearLayout(this); adv.setOrientation(LinearLayout.VERTICAL); adv.setVisibility(View.GONE); form.addView(adv);
         etServer = input(adv, "Адреса сервера (бота)", Cfg.DEFAULT_SERVER, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
@@ -194,7 +202,16 @@ public class MainActivity extends Activity {
         String s = Cfg.p(this).getString("server", "");
         etServer.setText(s.equals(Cfg.DEFAULT_SERVER) ? "" : s);
         etExtra.setText(Cfg.extra(this));
-        if ("esp2".equals(Cfg.board(this))) rb2.setChecked(true); else rb1.setChecked(true);
+        selectBoard(Cfg.board(this));
+    }
+
+    private void selectBoard(String b) {
+        boardSel = Cfg.validBoard(b) ? b : "esp1";
+        for (int i = 0; i < 6; i++) {
+            boolean on = boardSel.equals("esp" + (i + 1));
+            boards[i].setBackgroundDrawable(round(on ? BLUE : LINE, 8));
+            boards[i].setTextColor(on ? Color.WHITE : TEXT);
+        }
     }
 
     private void showForm(boolean show) {
@@ -208,7 +225,7 @@ public class MainActivity extends Activity {
         if (q.isEmpty()) { tvErr.setText("Вкажіть номер черги у форматі 3.2 (можна 3/2)"); return; }
         String srv = Cfg.normServer(etServer.getText().toString());
         String ex = Cfg.normServer(etExtra.getText().toString());
-        String board = rb2.isChecked() ? "esp2" : "esp1";
+        String board = boardSel;
         Cfg.p(this).edit().putString("queue", q).putString("board", board).putString("server", srv).putString("extra", ex).putBoolean("enabled", true)
                 .putLong("last_ts", 0).putBoolean("last_ok", true).putString("last_msg", "").commit();
         Cfg.log(this, "💾 Налаштування: черга " + q + " · " + board + (srv.isEmpty() ? "" : " · " + srv));
