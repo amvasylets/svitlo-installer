@@ -26,5 +26,5 @@
 Налаштування плати (розділ NVS, 0x9000) інсталятор не чіпає, якщо не ставити галочку «Erase device».
 
 ## Вихідний код
-`source/Svitlo_ESP32C3/Svitlo_ESP32C3.ino` — прошивка 2.0 (той самий код, з якого зібрано `firmware/svitlo.bin`).
+`source/Svitlo_ESP32C3/Svitlo_ESP32C3.ino` — прошивка 2.1 (той самий код, з якого зібрано `firmware/svitlo.bin`).
 Збірка: Arduino IDE, пакет «esp32 by Espressif» 3.x, плата **ESP32C3 Dev Module**, USB CDC On Boot: **Enabled**, Flash Mode: **DIO**, Partition Scheme: **Default 4MB with spiffs**.

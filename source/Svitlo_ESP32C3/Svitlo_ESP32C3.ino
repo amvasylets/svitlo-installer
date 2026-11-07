@@ -7,7 +7,7 @@
 //  Налаштування з телефона, без жодних посилань:
 //   1) підключіться до Wi-Fi «svitlo-setup» (без пароля);
 //   2) оберіть свою мережу Wi-Fi, введіть пароль;
-//   3) вкажіть номер черги (наприклад 3.2) і яка це плата: esp1 чи esp2;
+//   3) вкажіть номер черги (наприклад 3.2) і яка це плата: esp1…esp6 (на одній черзі може бути до 6 плат/телефонів);
 //   4) «Зберегти» — плата сама перевірить Wi-Fi і сервер і покаже результат.
 //
 //  Кнопка BOOT: натиснути 1 раз — увімкнути «svitlo-setup» на 10 хв;
@@ -29,7 +29,7 @@
 #include <esp_system.h>
 #include <time.h>
 
-#define FW_VER         "2.0"
+#define FW_VER         "2.1"
 #define AP_NAME        "svitlo-setup"
 #define DEFAULT_SERVER "https://svitlo51.a-m-vasylets.workers.dev"   // адреса вашого сервера Cloudflare
 #define LED_PIN        8        // вбудований синій світлодіод SuperMini (світиться при LOW)
@@ -51,7 +51,7 @@ Preferences prefs;
 // ---------------- налаштування (зберігаються в пам'яті плати) ----------------
 String ssid, pass;            // домашній Wi-Fi
 String queue;                 // номер черги, напр. "3.2"
-String board = "esp1";        // esp1 / esp2
+String board = "esp1";        // esp1 … esp6
 String pw;                    // пароль (для «svitlo-setup» і цієї сторінки); порожньо = без пароля
 String srv = DEFAULT_SERVER;  // адреса сервера
 String extra;                 // додаткова адреса (напр. Світлобот), необов'язково
@@ -107,6 +107,10 @@ String normQueue(String q) {             // «3/2», «3,2», « 3.2 » → «3.
   for (size_t i = 0; i < q.length(); i++) { char c = q[i]; if (isalnum((unsigned char)c) || c == '.' || c == '-' || c == '_') o += c; }
   return o;
 }
+bool validBoard(const String& b) {         // esp1 … esp6
+  return b.length() == 4 && b.startsWith("esp") && b.charAt(3) >= '1' && b.charAt(3) <= '6';
+}
+
 String hostName() {                      // svitlo-3-2-esp1  →  http://svitlo-3-2-esp1.local
   String h = "svitlo-" + (queue.length() ? queue : String("new")) + "-" + board;
   h.replace(".", "-"); h.replace("_", "-"); h.toLowerCase();
@@ -143,7 +147,7 @@ void loadConfig() {
   }
   history = prefs.getString("hist", "");
   prefs.end();
-  if (board != "esp2") board = "esp1";
+  if (!validBoard(board)) board = "esp1";
   if (!srv.startsWith("http")) srv = DEFAULT_SERVER;
 }
 void saveConfig() {
@@ -291,7 +295,7 @@ static const char PAGE_MAIN[] PROGMEM =
   "input{width:100%;box-sizing:border-box;padding:12px;background:#121212;color:#fff;border:1px solid #3a3a3a;border-radius:8px;font-size:16px}\n"
   ".net{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;background:#2a2a2a;border-radius:8px;margin:6px 0;cursor:pointer;font-size:15px}\n"
   ".net.sel{outline:2px solid #2980b9;background:#1d3446}.net i{font-style:normal;color:#9a9a9a;font-size:13px}\n"
-  ".seg{display:flex;gap:8px}.seg div{flex:1;text-align:center;padding:12px;border-radius:8px;background:#2a2a2a;cursor:pointer;font-weight:600}\n"
+  ".seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.seg div{text-align:center;padding:12px;border-radius:8px;background:#2a2a2a;cursor:pointer;font-weight:600}\n"
   ".seg .on{background:#2980b9;color:#fff}\n"
   ".btn{display:block;width:100%;box-sizing:border-box;padding:13px;margin-top:10px;border:0;border-radius:10px;font-size:16px;font-weight:600;color:#fff;background:#2980b9;text-align:center;text-decoration:none;cursor:pointer}\n"
   ".g{background:#3a3a3a}.o{background:#d35400}.r{background:#c0392b}.small{font-size:13px;color:#8a8a8a;line-height:1.5}\n"
@@ -323,7 +327,9 @@ static const char PAGE_MAIN[] PROGMEM =
   "<div class=\"small\" id=\"passHint\"></div>\n"
   "<h3 style=\"margin-top:18px\">💡 Черга і плата</h3>\n"
   "<label>Номер черги</label><input id=\"q\" inputmode=\"decimal\" placeholder=\"наприклад 3.2\">\n"
-  "<label>Яка це плата</label><div class=\"seg\"><div id=\"b1\" onclick=\"setB('esp1')\">esp1</div><div id=\"b2\" onclick=\"setB('esp2')\">esp2</div></div>\n"
+  "<label>Яка це плата <small>(якщо на черзі вже є esp1 — оберіть інший номер)</small></label><div class=\"seg\">"
+  "<div id=\"b1\" onclick=\"setB('esp1')\">esp1</div><div id=\"b2\" onclick=\"setB('esp2')\">esp2</div><div id=\"b3\" onclick=\"setB('esp3')\">esp3</div>"
+  "<div id=\"b4\" onclick=\"setB('esp4')\">esp4</div><div id=\"b5\" onclick=\"setB('esp5')\">esp5</div><div id=\"b6\" onclick=\"setB('esp6')\">esp6</div></div>\n"
   "<details style=\"margin-top:14px\"><summary>⚙️ Додатково</summary>\n"
   "<label>Пароль для «svitlo-setup» і цієї сторінки (не менше 8 символів; порожньо — без пароля). Для точки діє з наступного її ввімкнення. Забули — тримайте BOOT 5 с.</label><div class=\"pw\"><input id=\"pw\" type=\"password\" autocomplete=\"off\"><span onclick=\"tg('pw')\">👁</span></div>\n"
   "<label>Адреса сервера</label><input id=\"srv\" autocomplete=\"off\">\n"
@@ -337,7 +343,7 @@ static const char PAGE_MAIN[] PROGMEM =
   "let D={},B='esp1',sel='',testing=false,inited=false,fails=0,formOpen=false,scanned=false;\n"
   "const $=i=>document.getElementById(i),show=(i,v)=>$(i).classList.toggle('hide',!v);\n"
   "function tg(i){$(i).type=$(i).type=='password'?'text':'password'}\n"
-  "function setB(b){B=b;$('b1').className=b=='esp1'?'on':'';$('b2').className=b=='esp2'?'on':''}\n"
+  "function setB(b){B=b;for(let i=1;i<=6;i++)$('b'+i).className=b=='esp'+i?'on':''}\n"
   "function bars(r){return r>-55?'▂▄▆█':r>-67?'▂▄▆':r>-78?'▂▄':'▂'}\n"
   "function pick(s,lock){sel=s;$('ssid').value=s;document.querySelectorAll('.net').forEach(e=>e.classList.toggle('sel',e.dataset.s==s));\n"
   " $('passHint').textContent=lock?'':'Відкрита мережа — пароль не потрібен.';if(lock)$('pass').focus()}\n"
@@ -461,7 +467,7 @@ void handleSave() {
   String nSsid = server.arg("ssid"); nSsid.trim();
   String nPass = server.arg("pass");
   String nQ = normQueue(server.arg("q"));
-  String nB = server.arg("b") == "esp2" ? "esp2" : "esp1";
+  String nB = validBoard(server.arg("b")) ? server.arg("b") : String("esp1");
   String nPw = server.arg("pw");
   String nSrv = server.arg("srv"); nSrv.trim(); while (nSrv.endsWith("/")) nSrv.remove(nSrv.length() - 1);
   String nX = server.arg("x"); nX.trim();
