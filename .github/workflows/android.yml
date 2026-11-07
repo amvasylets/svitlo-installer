@@ -1,0 +1,95 @@
+name: Svitlo Пінг (Android)
+
+on:
+  push:
+    branches: [android-app]
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.b.outputs.ok }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - name: Збірка APK
+        id: b
+        env:
+          KS_B64: ${{ secrets.ANDROID_KS_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KS_PASS }}
+        run: |
+          mkdir -p dist
+          if bash android/build.sh > dist/build.log 2>&1; then echo "ok=true" >> $GITHUB_OUTPUT; else echo "ok=false" >> $GITHUB_OUTPUT; cat dist/build.log; exit 0; fi
+          cat dist/build.log
+          cp android/out/svitlo-ping.apk dist/
+          cp android/out/aligned.apk dist/svitlo-ping-unsigned.apk
+          BT="$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)"
+          cp "$BT/lib/apksigner.jar" dist/ || true
+          ls "$ANDROID_HOME/platforms" > dist/platforms.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: apk, path: dist/ }
+
+  test:
+    needs: build
+    if: needs.build.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 19, target: default, arch: x86 }
+          - { api: 24, target: default, arch: x86 }
+          - { api: 30, target: google_apis, arch: x86_64 }
+          - { api: 35, target: google_apis, arch: x86_64 }
+          - { api: 36, target: google_apis, arch: x86_64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: apk, path: apk }
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+          rm -f apk/svitlo-ping-unsigned.apk
+      - name: Тест на емуляторі Android API ${{ matrix.api }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.target }}
+          arch: ${{ matrix.arch }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save
+          disable-animations: true
+          script: bash android/test/emu-test.sh ${{ matrix.api }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: 'test-api${{ matrix.api }}', path: android/test/out/ }
+
+  publish:
+    needs: [build, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: art }
+      - name: Результати → гілка android-build, APK → реліз
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p pub/tests
+          cp art/apk/* pub/ 2>/dev/null || true
+          for d in art/test-api*; do [ -d "$d" ] || continue; n=$(basename $d); mkdir -p pub/tests/$n; cp $d/*.png $d/results.txt $d/hits.log pub/tests/$n/ 2>/dev/null || true; grep -B2 -A25 'FATAL EXCEPTION' $d/logcat.txt > pub/tests/$n/crash.txt 2>/dev/null || true; grep -i -E 'svitlo|PingService|ForegroundService' $d/logcat.txt | tail -300 > pub/tests/$n/logcat-app.txt 2>/dev/null || true; done
+          { echo "Збірка: ${{ github.sha }} · run ${{ github.run_number }}"; echo "Тести: ${{ needs.test.result }}"; for f in pub/tests/*/results.txt; do echo; echo "== $(basename $(dirname $f))"; cat $f; done; } > pub/SUMMARY.txt
+          cd pub && git init -q && git checkout -q -b android-build && git add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Svitlo Пінг: збірка ${{ github.run_number }}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" android-build
+          cd ..
+          [ -f pub/svitlo-ping.apk ] || exit 0
+          gh release view android-ping -R ${{ github.repository }} >/dev/null 2>&1 || gh release create android-ping -R ${{ github.repository }} --target ${{ github.sha }} --title "Svitlo Пінг для Android" --notes "Застосунок для Android 4.4–17: поки телефон на зарядці — щохвилини пінг боту."
