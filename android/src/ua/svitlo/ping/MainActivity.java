@@ -240,6 +240,8 @@ public class MainActivity extends Activity {
         refresh();
     }
 
+    private static void put(TextView t, CharSequence s) { if (!s.toString().equals(t.getText().toString())) t.setText(s); }
+
     private void refresh() {
         SharedPreferences sp = Cfg.p(this);
         long now = System.currentTimeMillis();
@@ -248,44 +250,44 @@ public class MainActivity extends Activity {
         boolean ch = sp.getBoolean("charging", false);
         long last = sp.getLong("last_ts", 0);
         boolean lastOk = sp.getBoolean("last_ok", false);
-        if (!conf) { tvState.setText("⚪ Не налаштовано"); tvState.setTextColor(MUTED); }
-        else if (!en) { tvState.setText("⏸ Зупинено"); tvState.setTextColor(MUTED); }
-        else if (!alive) { tvState.setText("⏳ Запуск…"); tvState.setTextColor(ACCENT); }
-        else if (!ch) { tvState.setText("🔌 Чекаю на зарядку"); tvState.setTextColor(ACCENT); }
-        else if (last == 0 || now - last > 150_000L) { tvState.setText("⏳ Працює, чекаю на першу відповідь"); tvState.setTextColor(ACCENT); }
-        else if (lastOk) { tvState.setText("🟢 Працює"); tvState.setTextColor(OK); }
-        else { tvState.setText("🔴 Немає зв'язку з сервером"); tvState.setTextColor(BAD); }
+        if (!conf) { put(tvState, "⚪ Не налаштовано"); tvState.setTextColor(MUTED); }
+        else if (!en) { put(tvState, "⏸ Зупинено"); tvState.setTextColor(MUTED); }
+        else if (!alive) { put(tvState, "⏳ Запуск…"); tvState.setTextColor(ACCENT); }
+        else if (!ch) { put(tvState, "🔌 Чекаю на зарядку"); tvState.setTextColor(ACCENT); }
+        else if (last == 0 || now - last > 150_000L) { put(tvState, "⏳ Працює, чекаю на першу відповідь"); tvState.setTextColor(ACCENT); }
+        else if (lastOk) { put(tvState, "🟢 Працює"); tvState.setTextColor(OK); }
+        else { put(tvState, "🔴 Немає зв'язку з сервером"); tvState.setTextColor(BAD); }
 
-        tvPower.setText(ch ? "⚡ Зарядка: є (" + sp.getString("plug", "є") + ")" : "🔌 Зарядка: немає — пінг не надсилається");
+        put(tvPower, ch ? "⚡ Зарядка: є (" + sp.getString("plug", "є") + ")" : "🔌 Зарядка: немає — пінг не надсилається");
         tvPower.setVisibility(conf && en ? View.VISIBLE : View.GONE);
         if (last > 0) {
             long ago = (now - last) / 1000;
-            String agoS = ago < 60 ? ago + " с тому" : (ago / 60) + " хв тому";
-            tvLast.setText("📡 Останній пінг: " + Cfg.hms(last) + " (" + agoS + ")\n" + (lastOk ? "✅ " : "❌ ") + sp.getString("last_msg", ""));
+            String agoS = ago < 60 ? "щойно" : (ago / 60) + " хв тому";
+            put(tvLast, "📡 Останній пінг: " + Cfg.hms(last) + " (" + agoS + ")\n" + (lastOk ? "✅ " : "❌ ") + sp.getString("last_msg", ""));
             tvLast.setTextColor(lastOk ? TEXT : BAD);
-        } else tvLast.setText(conf ? "📡 Пінгів ще не було" : "Заповніть налаштування нижче і натисніть «Зберегти і запустити».");
+        } else put(tvLast, conf ? "📡 Пінгів ще не було" : "Заповніть налаштування нижче і натисніть «Зберегти і запустити».");
         long next = sp.getLong("next", 0);
-        tvNext.setText(en && ch && next > now ? "⏱ Наступний пінг через " + ((next - now + 999) / 1000) + " с" : "");
+        put(tvNext, en && ch && next > now ? "⏱ Наступний пінг приблизно через " + Math.max(5, ((next - now) / 5000 + 1) * 5) + " с" : "");
         tvNext.setVisibility(tvNext.getText().length() > 0 ? View.VISIBLE : View.GONE);
         long xt = sp.getLong("x_ts", 0);
-        tvExtra.setText(!Cfg.extra(this).isEmpty() && xt > 0 ? "Додаткова адреса: " + Cfg.hms(xt) + " " + (sp.getBoolean("x_ok", false) ? "✅" : "❌ " + sp.getString("x_msg", "")) : "");
+        put(tvExtra, !Cfg.extra(this).isEmpty() && xt > 0 ? "Додаткова адреса: " + Cfg.hms(xt) + " " + (sp.getBoolean("x_ok", false) ? "✅" : "❌ " + sp.getString("x_msg", "")) : "");
         tvExtra.setVisibility(tvExtra.getText().length() > 0 ? View.VISIBLE : View.GONE);
-        tvWhere.setText(conf ? "Черга " + Cfg.queue(this) + " · " + Cfg.board(this) + "\n" + Cfg.pingUrl(this) : "");
+        put(tvWhere, conf ? "Черга " + Cfg.queue(this) + " · " + Cfg.board(this) + "\n" + Cfg.pingUrl(this) : "");
         tvWhere.setVisibility(conf ? View.VISIBLE : View.GONE);
-        btnToggle.setText(en ? "⏸ Зупинити пінг" : "▶️ Запустити пінг");
+        put(btnToggle, en ? "⏸ Зупинити пінг" : "▶️ Запустити пінг");
         btnToggle.setVisibility(conf ? View.VISIBLE : View.GONE);
 
         boolean bok = batteryOk();
-        tvBat.setText(bok ? "✅ Обмеження батареї вимкнено — Android не «приспить» застосунок" : "⚠️ Android може призупиняти застосунок у фоні. Натисніть кнопку нижче і дозвольте.");
+        put(tvBat, bok ? "✅ Обмеження батареї вимкнено — Android не «приспить» застосунок" : "⚠️ Android може призупиняти застосунок у фоні. Натисніть кнопку нижче і дозвольте.");
         btnBat.setVisibility(bok ? View.GONE : View.VISIBLE);
         batBox.setVisibility(Build.VERSION.SDK_INT >= 23 ? View.VISIBLE : View.GONE);
         if (Build.VERSION.SDK_INT >= 33) {
             boolean nok = checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED;
-            tvNotif.setText(nok ? "✅ Сповіщення дозволені (видно, що пінг працює)" : "⚠️ Сповіщення вимкнені — пінг працює, але його не видно у шторці");
+            put(tvNotif, nok ? "✅ Сповіщення дозволені (видно, що пінг працює)" : "⚠️ Сповіщення вимкнені — пінг працює, але його не видно у шторці");
             btnNotif.setVisibility(nok ? View.GONE : View.VISIBLE);
             notifBox.setVisibility(View.VISIBLE);
         } else notifBox.setVisibility(View.GONE);
-        if (histBox.getVisibility() == View.VISIBLE) { String h = sp.getString("hist", ""); tvHist.setText(h.isEmpty() ? "Подій ще не було" : h); }
+        if (histBox.getVisibility() == View.VISIBLE) { String h = sp.getString("hist", ""); put(tvHist, h.isEmpty() ? "Подій ще не було" : h); }
     }
 
     // ---------- дозволи ----------
